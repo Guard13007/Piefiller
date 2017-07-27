@@ -37,7 +37,15 @@ currently reworking it.
  	Pie:mousepressed(...)
  end
 ```
-5) With sufficient output, press the "E" key to output to file.
+5) With sufficient output, press the `E` key to output to file. Example output:
+```
+-----drawRectangles-----
+source:@main.lua:20
+current line: 22
+time: 548.325
+percentage: 98 %
+----------------
+```
 
 # Keys
 
@@ -49,7 +57,7 @@ up = decreases depth
 
 down = increases depth
 
-- = decreases step size
+\- = decreases step size
 
 =	= increases step size
 
@@ -95,8 +103,8 @@ piefiller:setKey(table)
 
 # For your own interpretation
 
-  If you wish to interpret the data on your own use `piefiller:unpack()`.
-  Output is a table as such:
+If you wish to interpret the data on your own use `piefiller:unpack()`.
+Output is a table as such:
 
 ```lua
 	data = {

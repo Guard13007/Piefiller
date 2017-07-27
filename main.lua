@@ -60,3 +60,13 @@ end
 function love.mousepressed(...)
 	profiler:mousepressed(...)
 end
+
+-- temporarily allowing for old behavior in 0.10.2
+function love.wheelmoved(x, y)
+	local X, Y = love.mouse.getPosition()
+	if y > 0 then
+  	love.mousepressed(X, Y, "wu")
+	else
+		love.mousepressed(X, Y, "wd")
+	end
+end
