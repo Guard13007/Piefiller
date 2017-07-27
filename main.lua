@@ -38,6 +38,7 @@ function love.draw()
 	profiler:draw()
 
 	-- temporary
+	love.graphics.setColor(255, 255, 255, 255)
 	love.graphics.line(w/2, 0, w/2, h)
 	love.graphics.line(0, h/2, w, h/2)
 end
@@ -60,4 +61,14 @@ function love.keypressed(key)
 	end
 
 	profiler:keypressed(key)
+end
+
+function love.wheelmoved(x, y)
+	if y < 0 then
+		-- up
+		profiler.scale = profiler.scale - 0.1
+	else
+    -- down
+		profiler.scale = profiler.scale + 0.1
+	end
 end

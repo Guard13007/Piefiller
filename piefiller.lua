@@ -63,9 +63,9 @@ function piefiller:new(settings)
   self.timer = 0
   self.depth = 2
   self.small = false
-  self.x = 0.5
-  self.y = 0.5
-  self.scale = 0.5
+  self.x = 0
+  self.y = 0
+  self.scale = 0.4
 	self.font = love.graphics.newFont(16 / self.scale)
 	self.visible = true
   self.step = 1
@@ -74,8 +74,8 @@ function piefiller:new(settings)
 		reset = "r",
 		increase_depth = "down",
 		decrease_depth = "up",
-		increase_step_size = "=",
-		decrease_step_size = "-",
+		increase_step_size = "-",
+		decrease_step_size = "=",
 		shorten_names = "z",
 		show_hidden = "h",
 		save_to_file = "e",
@@ -239,37 +239,37 @@ function piefiller:draw(args)
   local loading
 	local oldFont = love.graphics.getFont()
 	local oldLineJoin = love.graphics.getLineJoin()
-	local args = args or {}
-	local rad = args.radius
-  local mode = args.mode or "list" -- "original" for the original style
   local pi = math.pi
 	local arc = love.graphics.arc
 	local w,h = love.graphics.getDimensions()
 
-	if not args.radius then
-		if mode == "list" then
-			rad = h * self.scale - 2 / self.scale
-		elseif mode == "original" then
-			rad = 200
-		end
-	end
+	local args = args or {}
+	local rad = args.radius or (h * self.scale - 2 / self.scale)
+  local mode = args.mode or "original" -- "original" for the original style
 
 	love.graphics.push()
 
-	love.graphics.translate(self.x * w - w/2, self.y * h - h/2)
+	love.graphics.translate(self.x, self.y)
 	love.graphics.scale(self.scale)
 	love.graphics.setLineJoin("bevel")
 	love.graphics.setFont(self.font)
 
+	local cx = w/2 + (rad*2 - w)/2 + 2 / self.scale
+	local cy = h * self.scale
+
+	local maxLength = 0
+	for i,v in ipairs(self.parsed) do
+		local s = self.font:getWidth(self:getText(v))
+		if s > maxLength then maxLength = s end
+	end
 	setColor(self.background)
-	love.graphics.rectangle("fill", 0, 0, w, h)
+	love.graphics.rectangle("fill", 0, 0, cx * 2 + 2 / self.scale + maxLength, cy * 2)
 
 	if self.parsed and self.totaltime > 0  then
     local lastangle = 0
 
 		for i,v in ipairs(self.parsed) do
       local color = v.color
-			local cx,cy = w/2,h/2
 			local angle = math.rad(3.6*v.prc)
 			setColor(color)
 			arc("fill",cx,cy,rad,lastangle,lastangle + angle)
@@ -280,72 +280,38 @@ function piefiller:draw(args)
 			lastangle = lastangle + angle
     end
 
-		love.graphics.circle("line", w/2, h/2, rad) -- make sure there is an outer white border
+		love.graphics.circle("line", cx, cy, rad) -- make sure there is an outer white border
 
-		if mode == "list" then
-			local x = w/2 + rad + 2 / self.scale
-			local y = h/2 - rad
+		local x = cx + rad + 2 / self.scale
+		local y = cy - rad
+		love.graphics.print("Depth: "..self.depth.." Step: "..self.step, x, y)
+		y = y + self.font:getHeight()
 
-			local sorted = {}
-			for i,v in ipairs(self.parsed) do
-				sorted[i] = {i, v.prc}
-			end
-			table.sort(sorted,function(a,b)
-				return a[2] > b[2]
-			end)
-
-			for _,i in ipairs(sorted) do
-				local v = self.parsed[i[1]]
-				local color = v.color
-				local txt = self:getText(v)
-				setColor(color)
-				love.graphics.print(txt, x, y)
-				y = y + self.font:getHeight()
-			end
-
-		elseif mode == "original" then
-      local font = love.graphics.getFont()
-			lastangle = 0
-
-			for i,v in ipairs(self.parsed) do
-				local color = v.color
-				local cx,cy = w/2,h/2
-				local angle = math.rad(3.6*v.prc)
-				local x = cx + rad * math.cos(lastangle + angle/2)
-				local y = cy + rad * math.sin(lastangle + angle/2)
-				local txt = self:getText(v)
-				local fw = font:getWidth(txt)
-				local sx = 1
-				if cx < x then
-					sx = -1
-					fw = 0
-				end
-				if cy + rad/2 < y then
-					y = y + font:getHeight()
-				elseif cy + rad/2 > y then
-					y = y - font:getHeight()
-				end
-
-				love.graphics.print(txt,((x) + (-(fw+20))*sx),y)
-				lastangle = lastangle + angle
-			end
-
-			setColor()
-			local t = "Depth: "..self.depth.." with step: "..self.step
-			local fw = self.font:getWidth(t)
-			local fh = self.font:getHeight()
-			love.graphics.print(t,w/2 - fw/2,(fh+5)) -- TODO re-position this
-			if loading then
-				t = "Loading..."
-				fw = self.font:getWidth(t)
-				love.graphics.print("Loading...",w/2 - fw/2,h/2)
-			end
-
-		else
-			error("Invalid draw mode. Should be 'list' or 'original'.")
+		local sorted = {}
+		for i,v in ipairs(self.parsed) do
+			sorted[i] = {i, v.prc}
 		end
+		table.sort(sorted,function(a,b)
+			return a[2] > b[2]
+		end)
+
+		for _,i in ipairs(sorted) do
+			local v = self.parsed[i[1]]
+			local color = v.color
+			local txt = self:getText(v)
+			setColor(color)
+			love.graphics.print(txt, x, y)
+			y = y + self.font:getHeight()
+		end
+
 	else
-		loading  = true
+		-- REFACTOR
+		setColor()
+		local t = "Loading..."
+		local fh = self.font:getHeight()
+		fw = self.font:getWidth(t)
+		love.graphics.print("Loading...", w/2 - fw/2, h/2)
+		-- END
   end
 
 	-- our timing is handled in draw... why? My guess is because we aren't called in update
