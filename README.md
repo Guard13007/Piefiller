@@ -4,31 +4,33 @@ Graphical profiler for Love2D >= 0.9.2
 
 Originally by devfirefly, heavily modified by Guard13007.
 
+Note that a lot of functionality is undocumented right now, and that some functionality doesn't work as originally intended (such as setting the position and scale of the profiler). The default settings should get you going pretty easily, the key thing to maybe change is calling the constructor with a table with its own `scale` value.
+
 # Usage
 
 1) Require the file:
 ```lua
-  local piefiller = require("piefiller")
+  local Piefiller = require("piefiller")
 ```
 2) Make a new instance of piefiller:
 ```lua
-  local Pie = piefiller:new()
+  local pie = Piefiller()
 ```
 3) Attach the piefiller to the part of your application that you want to monitor (love.update and love.draw typically are good places):
 ```lua
  function love.update()
-	Pie:attach()
+	pie:attach()
 		-- do something
-	Pie:detach()
+	pie:detach()
  end
 ```
 4) Draw the output and pass key events to your piefiller:
 ```lua
  function love.draw()
-	Pie:draw()
+	pie:draw()
  end
  function love.keypressed(key)
- 	Pie:keypressed(key)
+ 	pie:keypressed(key)
  end
 ```
 5) With sufficient output, press the `E` key to output to file. Example output:
@@ -78,13 +80,13 @@ show_profiler
 
 To redefine only one of the keys:
 ```lua
-piefiller:setKey(command, key)
+pie:setKey(command, key)
 ```
 
 example:
 
 ```lua
-piefiller:setKey("increase_depth","up")
+pie:setKey("increase_depth","up")
 ```
 
 To redefine all of the keys:
@@ -92,12 +94,12 @@ To redefine all of the keys:
 table = {
 	"increase_depth" = "up"
 }
-piefiller:setKey(table)
+pie:setKey(table)
 ```
 
 # For your own interpretation
 
-If you wish to interpret the data on your own use `piefiller:unpack()`.
+If you wish to interpret the data on your own use `pie:unpack()`.
 Output is a table as such:
 
 ```lua
