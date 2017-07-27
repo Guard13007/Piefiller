@@ -1,16 +1,23 @@
 # Piefiller
-Graphical profiler for Love2D 9.2
-# Usage
-1) require the file:
-```lua
-  piefiller = require("piefiller")
-```
-2) make a new instance of piefiller
-```lua
-  Pie = piefiller:new()
-```
-3) attach the piefiller to the part of your application that you want to monitor, it can be whatever but I suggest calling it in love.update or love.draw as this is what piefiller is all about.
 
+Graphical profiler for Love2D >= 0.9.2
+
+Originally by devfirefly, heavily modified by Guard13007.
+
+NOTE: This ReadMe does not currently represent the state of the library as I am
+currently reworking it.
+
+# Usage
+
+1) Require the file:
+```lua
+  local piefiller = require("piefiller")
+```
+2) Make a new instance of piefiller:
+```lua
+  local Pie = piefiller:new()
+```
+3) Attach the piefiller to the part of your application that you want to monitor (love.update and love.draw typically are good places):
 ```lua
  function love.update()
 	Pie:attach()
@@ -18,37 +25,43 @@ Graphical profiler for Love2D 9.2
 	Pie:detach()
  end
 ```
-4) draw the output in your draw function and give event hooks for your pie.
+4) Draw the output and pass events to your piefiller:
 ```lua
  function love.draw()
 	Pie:draw()
  end
- function love.keypressed(...)
- 	Pie:keypressed(...)
+ function love.keypressed(key)
+ 	Pie:keypressed(key)
  end
  function love.mousepressed(...)
  	Pie:mousepressed(...)
  end
 ```
-5) When you get sufficient output press the "P" key to output to file.
+5) With sufficient output, press the "E" key to output to file.
+
 # Keys
-r 	= resets the pie 
 
-up 	= decreases depth 
+p = shows/hides the profiler
 
-down 	= increases depth 
+r = resets the pie
 
-, 	= decreases step size 
+up = decreases depth
 
-.	= increases step size 
+down = increases depth
+
+- = decreases step size
+
+=	= increases step size
 
 s	= shortens the names displayed
 
-c	= hides/shows hidden processes
+h	= shows/hides hidden processes
 
-p	= saves to file called "Profile" and opens directory for you
+e	= saves to file called "Profile.txt" and opens directory for you
+
 ## To redefine these:
-Modes available:
+
+Commands available:
 ```lua
 reset
 increase_depth
@@ -58,11 +71,12 @@ decrease_step_size
 shorten_names
 show_hidden
 save_to_file
+show_profiler
 ```
-To redefine only one of the keys:
 
+To redefine only one of the keys:
 ```lua
-piefiller:setKey(mode,key)
+piefiller:setKey(command, key)
 ```
 
 example:
@@ -70,43 +84,49 @@ example:
 ```lua
 piefiller:setKey("increase_depth","up")
 ```
+
 To redefine all of the keys:
 ```lua
-	
 table = {
 	"increase_depth" = "up"
 }
 piefiller:setKey(table)
-	
 ```
-# For your own interpretation 
-	If you wish to interpret the data on your own use piefiller:unpack().
-	Output is a table as such:
-	
+
+# For your own interpretation
+
+  If you wish to interpret the data on your own use `piefiller:unpack()`.
+  Output is a table as such:
+
 ```lua
 	data = {
-		items = { 
-			{ 
+		items = {
+			{
 				name,
-				line_defined, 
+				line_defined,
 				current_line,
 				source,
-				time_taken, 
+				time_taken,
 				percentage,
 				caller,
 			}
-		}, 
+		},
 		about = {
 			depth,
-			step, 
+			step,
 			totalTime,
-		}, 
-	} 
+		},
+	}
 ```
-	
-# Additional notes
-The best depth to search for is 2 and 3.
 
-When used in large applications the output is difficult to read, however printing to file resolves this issue.
+# Additional notes
+
+The best depth to search in is usually 2 and sometimes 3.
+
+When used in large applications the output may be too much to read, however you
+most likely will only be wanting to optimize the most expensive items. (And you
+can always output the data to review later.)
+
 # Planned features
-Make sure that text does not overlay.
+
+See my ToDo list, issue #1 on GitHub.
