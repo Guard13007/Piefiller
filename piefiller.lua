@@ -221,7 +221,11 @@ end
 
 function piefiller:getText(v)
 	if self.small then
-		return tostring(math.ceil(v.prc)).."% "..tostring(v.src)..":"..tostring(v.def)
+		if v.src:sub(1,1) == "@" then
+  		return tostring(math.ceil(v.prc)).."% "..tostring(v.src:sub(2))..":"..tostring(v.def)
+		else
+  		return tostring(math.ceil(v.prc)).."% "..tostring(v.src)..":"..tostring(v.def)
+  	end
 	else
 		if v.src:sub(1,1) == "@" then
   		return tostring(math.ceil(v.prc)).."% "..tostring(v.name)..tostring(v.src)..":"..tostring(v.def)
