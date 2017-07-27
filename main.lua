@@ -30,7 +30,16 @@ function love.draw()
 
 	profiler:detach() -- was attached in update function
 
+	-- temporary
+	local w, h = love.graphics.getWidth(), love.graphics.getHeight()
+	love.graphics.setColor(255, 255, 255, 255)
+	love.graphics.rectangle("fill", 0, 0, w, h)
+
 	profiler:draw()
+
+	-- temporary
+	love.graphics.line(w/2, 0, w/2, h)
+	love.graphics.line(0, h/2, w, h/2)
 end
 
 function love.update(dt)

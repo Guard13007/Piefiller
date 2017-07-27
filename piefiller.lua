@@ -63,9 +63,10 @@ function piefiller:new(settings)
   self.timer = 0
   self.depth = 2
   self.small = false
-  self.x = 0
-  self.y = 0
-  self.scale = 1
+  self.x = 0.5
+  self.y = 0.5
+  self.scale = 0.5
+	self.font = love.graphics.newFont(16 / self.scale)
 	self.visible = true
   self.step = 1
 	self.background = {0, 0, 0, 180}
@@ -230,7 +231,7 @@ function piefiller:getText(v)
 	end
 end
 
-local largeFont = love.graphics.newFont(25)
+-- local largeFont = love.graphics.newFont(25)
 
 function piefiller:draw(args)
 	if not self.visible then return end
@@ -239,17 +240,26 @@ function piefiller:draw(args)
 	local oldFont = love.graphics.getFont()
 	local oldLineJoin = love.graphics.getLineJoin()
 	local args = args or {}
-	local rad = args.radius or 200
+	local rad = args.radius
   local mode = args.mode or "list" -- "original" for the original style
   local pi = math.pi
 	local arc = love.graphics.arc
 	local w,h = love.graphics.getDimensions()
 
+	if not args.radius then
+		if mode == "list" then
+			rad = h * self.scale - 2 / self.scale
+		elseif mode == "original" then
+			rad = 200
+		end
+	end
+
 	love.graphics.push()
 
-	love.graphics.translate(self.x,self.y)
+	love.graphics.translate(self.x * w - w/2, self.y * h - h/2)
 	love.graphics.scale(self.scale)
 	love.graphics.setLineJoin("bevel")
+	love.graphics.setFont(self.font)
 
 	setColor(self.background)
 	love.graphics.rectangle("fill", 0, 0, w, h)
@@ -273,7 +283,7 @@ function piefiller:draw(args)
 		love.graphics.circle("line", w/2, h/2, rad) -- make sure there is an outer white border
 
 		if mode == "list" then
-			local x = w/2 + rad + 2
+			local x = w/2 + rad + 2 / self.scale
 			local y = h/2 - rad
 
 			local sorted = {}
@@ -290,7 +300,7 @@ function piefiller:draw(args)
 				local txt = self:getText(v)
 				setColor(color)
 				love.graphics.print(txt, x, y)
-				y = y + 15
+				y = y + self.font:getHeight()
 			end
 
 		elseif mode == "original" then
@@ -320,6 +330,17 @@ function piefiller:draw(args)
 				lastangle = lastangle + angle
 			end
 
+			setColor()
+			local t = "Depth: "..self.depth.." with step: "..self.step
+			local fw = self.font:getWidth(t)
+			local fh = self.font:getHeight()
+			love.graphics.print(t,w/2 - fw/2,(fh+5)) -- TODO re-position this
+			if loading then
+				t = "Loading..."
+				fw = self.font:getWidth(t)
+				love.graphics.print("Loading...",w/2 - fw/2,h/2)
+			end
+
 		else
 			error("Invalid draw mode. Should be 'list' or 'original'.")
 		end
@@ -327,21 +348,10 @@ function piefiller:draw(args)
 		loading  = true
   end
 
+	-- our timing is handled in draw... why? My guess is because we aren't called in update
 	self.timer = self.timer + love.timer.getDelta()
 	if self.timer > 20 then
 		self.timer = 0
-	end
-
-	setColor()
-	love.graphics.setFont(largeFont)
-	local t = "Depth: "..self.depth.." with step: "..self.step
-	local fw = largeFont:getWidth(t)
-	local fh = largeFont:getHeight()
-	love.graphics.print(t,w/2 - fw/2,(fh+5))
-	if loading then
-		t = "Loading..."
-		fw = largeFont:getWidth(t)
-		love.graphics.print("Loading...",w/2 - fw/2,h/2)
 	end
 
 	love.graphics.pop()
