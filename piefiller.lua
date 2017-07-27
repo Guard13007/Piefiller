@@ -74,8 +74,8 @@ function piefiller:new(settings)
 		reset = "r",
 		increase_depth = "down",
 		decrease_depth = "up",
-		increase_step_size = "-",
-		decrease_step_size = "=",
+		increase_step_size = "=",
+		decrease_step_size = "-",
 		shorten_names = "z",
 		show_hidden = "h",
 		save_to_file = "e",
@@ -342,13 +342,17 @@ function piefiller:keypressed(key)
 			self.depth = self.depth + 1
 		elseif command == "decrease_depth" then
 			self:reset()
-			self.depth = self.depth - 1
+			if self.depth > 1 then
+  			self.depth = self.depth - 1
+			end
 		elseif command == "increase_step_size" then
 			self:reset()
-			self.step = self.step - 1
+			self.step = self.step + 1
 		elseif command == "decrease_step_size" then
 			self:reset()
-			self.step = self.step +1
+			if self.step > 0 then
+  			self.step = self.step - 1
+			end
 		elseif command == "shorten_names" then
 			self.small = not self.small
 		elseif command == "show_hidden" then
