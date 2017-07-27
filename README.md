@@ -4,9 +4,6 @@ Graphical profiler for Love2D >= 0.9.2
 
 Originally by devfirefly, heavily modified by Guard13007.
 
-NOTE: This ReadMe does not currently represent the state of the library as I am
-currently reworking it.
-
 # Usage
 
 1) Require the file:
@@ -25,16 +22,13 @@ currently reworking it.
 	Pie:detach()
  end
 ```
-4) Draw the output and pass events to your piefiller:
+4) Draw the output and pass key events to your piefiller:
 ```lua
  function love.draw()
 	Pie:draw()
  end
  function love.keypressed(key)
  	Pie:keypressed(key)
- end
- function love.mousepressed(...)
- 	Pie:mousepressed(...)
  end
 ```
 5) With sufficient output, press the `E` key to output to file. Example output:
@@ -134,7 +128,3 @@ The best depth to search in is usually 2 and sometimes 3.
 When used in large applications the output may be too much to read, however you
 most likely will only be wanting to optimize the most expensive items. (And you
 can always output the data to review later.)
-
-# Planned features
-
-See my ToDo list, issue #1 on GitHub.

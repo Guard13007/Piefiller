@@ -1,8 +1,7 @@
-profilerOn = true
 drawRect = true
 
 local Profiler = require("piefiller")
-local profiler = Profiler:new()
+local profiler = Profiler()
 
 function iterateSmall()
 	for i=1,1000 do
@@ -31,10 +30,7 @@ function love.draw()
 
 	profiler:detach() -- was attached in update function
 
-	if profilerOn then
-		-- profiler:draw({50}) -- did not appear to have a difference in 0.9.2 or 0.10.2
-		profiler:draw()
-	end
+	profiler:draw()
 end
 
 function love.update(dt)
@@ -49,24 +45,10 @@ end
 
 function love.keypressed(key)
 	if key == "escape" then
-		profilerOn = not profilerOn
+		love.event.quit()
 	elseif key == ";" then
 		drawRect = not drawRect
 	end
 
 	profiler:keypressed(key)
-end
-
-function love.mousepressed(...)
-	profiler:mousepressed(...)
-end
-
--- temporarily allowing for old behavior in 0.10.2
-function love.wheelmoved(x, y)
-	local X, Y = love.mouse.getPosition()
-	if y > 0 then
-  	love.mousepressed(X, Y, "wu")
-	else
-		love.mousepressed(X, Y, "wd")
-	end
 end

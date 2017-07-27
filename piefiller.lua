@@ -2,9 +2,8 @@ local path = ...
 local piefiller = {}
 
 local function hsvToRgb(h, s, v)
-	local i, f, p, q, t, r, g, b -- was polluting with globals
+	local i, f, p, q, t, r, g, b
 
-	-- local h,s,v = h,1,1 -- was ignoring s/v values entirely
   h = math.fmod(h, 360)
 
   if s == 0 then return {v, v, v} end
@@ -40,22 +39,24 @@ local function copy(t)
 	return ret
 end
 
-local function setColor(...) -- was global
+local function setColor(...)
+	-- TODO factor this function out?
 	local args = {...}
 	love.graphics.setColor(args[1] or 255, args[2] or 255, args[3] or 255, args[4] or 255)
 end
 
 -- TODO verify these do not break if using multiple profilers
 local color_data = {}
-local colors = {} -- the pool of available colors is removed from every time a new time is used
+local colors = {} -- NOTE the pool of available colors is removed from every time a new time is used
 
 for i=0,300 do
 	table.insert( colors, hsvToRgb(i, 1, 1) )
 end
 
-function piefiller:new()
+function piefiller:new(settings)
   local self = {}
   setmetatable( self, {__index = piefiller} )
+
   self.data = {}
 	self.parsed = {}
   self.last = 0
@@ -65,41 +66,56 @@ function piefiller:new()
   self.x = 0
   self.y = 0
   self.scale = 1
+	self.visible = true
   self.step = 1
+	self.background = {0, 0, 0, 180}
   self.keys = {
 		reset = "r",
 		increase_depth = "down",
 		decrease_depth = "up",
-		-- TODO changing step_size should trigger a reset (by default, make it optional), because else the data is invalid
-		increase_step_size = "=", -- changed default to "+" button
-		decrease_step_size = "-", -- changed default to "-" button
-		shorten_names = "z", -- changed default (based on assumption WASD is common control scheme)
-		show_hidden = "h",   -- changed default
-		save_to_file = "e",  -- changed default -> e for export
-		show_profiler = "p",     -- added new control to show/hide the profiler, default p
+		increase_step_size = "=",
+		decrease_step_size = "-",
+		shorten_names = "z",
+		show_hidden = "h",
+		save_to_file = "e",
+		show_profiler = "p",
 	}
+
+	if settings then
+		for k,v in pairs(settings) do
+			if self[k] then
+				self[k] = v
+			end
+		end
+	  if not type(self.keys) == "table" then
+		  self.keys = {}
+  	end
+	end
+
 	return self
 end
 
 function piefiller:reset()
 	self.data = {}
 	-- why should these be reset? only the data matters
-	self.x = 0
-	self.y = 0
-	self.scale = 1
+	-- self.x = 0
+	-- self.y = 0
+	-- self.scale = 1
 end
 
 function piefiller:setKey(table_or_command,key)
 	if type(table_or_command) == "table" then
-		self.keys = table_or_command
+		-- self.keys = table_or_command -- this was stupid and pointless actually, wtf
 		for i,v in pairs(table_or_command) do
 			if self.keys[i] then self.keys[i] = v end
 		end
 	elseif type(table_or_command) == "string" then
 		if not self.keys[table_or_command] then error("Invalid command: "..tostring(table_or_command)) end
 		self.keys[table_or_command] = key
+	elseif not table_or_command then
+		self.keys = {}
 	else
-		error("Expected table or string, got: "..type(table_or_command))
+		error("Expected table, string, false, or nil; got: "..type(table_or_command))
 	end
 end
 
@@ -202,15 +218,29 @@ function piefiller:detach(stop) -- TODO figure out what stop is useful for
 	if not stop then debug.sethook() end
 end
 
+function piefiller:getText(v)
+	if self.small then
+		return tostring(math.ceil(v.prc)).."% "..tostring(v.src)..":"..tostring(v.def)
+	else
+		if v.src:sub(1,1) == "@" then
+  		return tostring(math.ceil(v.prc)).."% "..tostring(v.name)..tostring(v.src)..":"..tostring(v.def)
+		else
+  		return tostring(math.ceil(v.prc)).."% "..tostring(v.name).."@"..tostring(v.src)..":"..tostring(v.def)
+		end
+	end
+end
+
 local largeFont = love.graphics.newFont(25)
+
 function piefiller:draw(args)
+	if not self.visible then return end
+
   local loading
 	local oldFont = love.graphics.getFont()
+	local oldLineJoin = love.graphics.getLineJoin()
 	local args = args or {}
-	local rad = args.rad or 200
-	-- these weren't even being used
-  -- local mode = args["mode"] or "simple"
-  -- local ret = args["return"]
+	local rad = args.radius or 200
+  local mode = args.mode or "list" -- "original" for the original style
   local pi = math.pi
 	local arc = love.graphics.arc
 	local w,h = love.graphics.getDimensions()
@@ -219,10 +249,13 @@ function piefiller:draw(args)
 
 	love.graphics.translate(self.x,self.y)
 	love.graphics.scale(self.scale)
+	love.graphics.setLineJoin("bevel")
+
+	setColor(self.background)
+	love.graphics.rectangle("fill", 0, 0, w, h)
 
 	if self.parsed and self.totaltime > 0  then
     local lastangle = 0
-    local font = love.graphics.getFont()
 
 		for i,v in ipairs(self.parsed) do
       local color = v.color
@@ -230,41 +263,65 @@ function piefiller:draw(args)
 			local angle = math.rad(3.6*v.prc)
 			setColor(color)
 			arc("fill",cx,cy,rad,lastangle,lastangle + angle)
-			-- setColor(colors.black) -- not defined, actually needs to be white
 			setColor(255, 255, 255, 255)
 			if v.prc > 1 then
 				arc("line",cx,cy,rad,lastangle,lastangle + angle)
 			end
 			lastangle = lastangle + angle
-			setColor()
     end
 
-		lastangle = 0
-		for i,v in ipairs(self.parsed) do
-			local color = v.color
-			local cx,cy = w/2,h/2
-			local angle = math.rad(3.6*v.prc)
-			local x = cx + rad * math.cos(lastangle + angle/2)
-			local y = cy + rad * math.sin(lastangle + angle/2)
-			if self.small then
-				txt = tostring(v.src).." @: "..tostring(v.name)
-			else
-				txt = tostring(math.ceil(v.prc)).." % "..tostring(v.name).." : "..tostring(v.src).." @: "..tostring(v.def)
+		love.graphics.circle("line", w/2, h/2, rad) -- make sure there is an outer white border
+
+		if mode == "list" then
+			local x = w/2 + rad + 2
+			local y = h/2 - rad
+
+			local sorted = {}
+			for i,v in ipairs(self.parsed) do
+				sorted[i] = {i, v.prc}
 			end
-			local fw = font:getWidth(txt)
-			local sx = 1
-			if cx < x then
-				sx = -1
-				fw = 0
+			table.sort(sorted,function(a,b)
+				return a[2] > b[2]
+			end)
+
+			for _,i in ipairs(sorted) do
+				local v = self.parsed[i[1]]
+				local color = v.color
+				local txt = self:getText(v)
+				setColor(color)
+				love.graphics.print(txt, x, y)
+				y = y + 15
 			end
-			if cy + rad/2 < y then
-				y = y + font:getHeight()
-			elseif cy + rad/2 > y then
-				y = y - font:getHeight()
+
+		elseif mode == "original" then
+      local font = love.graphics.getFont()
+			lastangle = 0
+
+			for i,v in ipairs(self.parsed) do
+				local color = v.color
+				local cx,cy = w/2,h/2
+				local angle = math.rad(3.6*v.prc)
+				local x = cx + rad * math.cos(lastangle + angle/2)
+				local y = cy + rad * math.sin(lastangle + angle/2)
+				local txt = self:getText(v)
+				local fw = font:getWidth(txt)
+				local sx = 1
+				if cx < x then
+					sx = -1
+					fw = 0
+				end
+				if cy + rad/2 < y then
+					y = y + font:getHeight()
+				elseif cy + rad/2 > y then
+					y = y - font:getHeight()
+				end
+
+				love.graphics.print(txt,((x) + (-(fw+20))*sx),y)
+				lastangle = lastangle + angle
 			end
-			local ofx
-			love.graphics.print(txt,((x) + (-(fw+20))*sx),y)
-			lastangle = lastangle + angle
+
+		else
+			error("Invalid draw mode. Should be 'list' or 'original'.")
 		end
 	else
 		loading  = true
@@ -275,6 +332,7 @@ function piefiller:draw(args)
 		self.timer = 0
 	end
 
+	setColor()
 	love.graphics.setFont(largeFont)
 	local t = "Depth: "..self.depth.." with step: "..self.step
 	local fw = largeFont:getWidth(t)
@@ -289,39 +347,7 @@ function piefiller:draw(args)
 	love.graphics.pop()
 
 	love.graphics.setFont(oldFont)
-end
-
-function piefiller:mousepressed(x,y,b)
-	if b == "wu" then
-		local scale = self.scale - math.floor((0.05*self.scale)*1000)/1000
-		if scale > 0 and scale > 0.1 then
-			local lastzoom = self.scale
-			local mouse_x = x - self.x
-			local mouse_y = y - self.y
-			self.scale = scale
-			local newx = mouse_x * (self.scale/lastzoom)
-			local newy = mouse_y * (self.scale/lastzoom)
-			self.x = self.x + (mouse_x-newx)
-			self.y = self.y + (mouse_y-newy)
-		else
-			self.scale = 0.1
-		end
-	elseif b == "wd" then
-		local scale = self.scale + math.floor((0.05*self.scale)*1000)/1000
-		local scalex = self.scale
-		if scale > 0 and scale < 20 then
-			local lastzoom = self.scale
-			local mouse_x = x - self.x
-			local mouse_y = y - self.y
-			self.scale = scale
-			local newx = mouse_x * (self.scale/lastzoom)
-			local newy = mouse_y * (self.scale/lastzoom)
-			self.x = self.x + (mouse_x-newx)
-			self.y = self.y + (mouse_y-newy)
-		else
-			self.scale = 20
-		end
-	end
+	love.graphics.setLineJoin(oldLineJoin)
 end
 
 function piefiller:keypressed(key)
@@ -342,14 +368,18 @@ function piefiller:keypressed(key)
 			self:reset()
 			self.depth = self.depth - 1
 		elseif command == "increase_step_size" then
+			self:reset()
 			self.step = self.step - 1
 		elseif command == "decrease_step_size" then
+			self:reset()
 			self.step = self.step +1
 		elseif command == "shorten_names" then
 			self.small = not self.small
 		elseif command == "show_hidden" then
 			self:reset()
 			self.view_children = not self.view_children
+		elseif command == "show_profiler" then
+			self.visible = not self.visible
 		elseif command == "save_to_file" then
 			local parsed = copy(self.parsed)
 			table.sort(parsed,function(a,b)
@@ -406,5 +436,7 @@ function piefiller:unpack(fn)
 	end
 	return data
 end
+
+setmetatable( piefiller, { __call = piefiller.new } )
 
 return piefiller
